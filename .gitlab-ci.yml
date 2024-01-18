@@ -1,0 +1,84 @@
+# This file is a template, and might need editing before it works on your project.
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+
+# This is a sample GitLab CI/CD configuration file that should run without any modifications.
+# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
+# it uses echo commands to simulate the pipeline execution.
+#
+# A pipeline is composed of independent jobs that run scripts, grouped into stages.
+# Stages run in sequential order, but jobs within stages run in parallel.
+#
+# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
+
+stages:
+    - stage
+    - dev
+    
+variables:
+    IMAGE_NAME: cyecom-api-actions-e2e
+    CONTAINER_NAME: cyecom-api-actions-master-e2e
+    DEV_IMAGE_NAME: cyecom-api-actions-dev
+    DEV_CONTAINER_NAME: cyecom-api-actions-dev-local
+    TAG: latest
+
+    AUTH_SECRET: $SECRET_KEY
+    AUTH_OTP: $AUTH_OTP_SECRET
+    AUTH_KEY: $AUTHORIZATION
+    TOKEN_KEY: $TOKEN_PRIVATE_KEY
+    S3_BUCKET_URL: $S3_BASEURL
+
+    AWS_KEY: $AWS_ACCESS_KEYID
+    AWS_SECRET_KEY: $AWS_SECRET_ACCESSKEY
+
+    TYPE: $FIREBASE_TYPE
+    PROJECT_ID: $FIREBASE_PROJECT_ID
+    PRIVATE_KEY_ID: $FIREBASE_PRIVATE_KEY_ID
+    PRIVATE_KEY: $FIREBASE_PRIVATE_KEY
+    CLIENT_EMAIL: $FIREBASE_CLIENT_EMAIL
+    CLIENT_ID: $FIREBASE_CLIENT_ID
+    AUTH_URI: $FIREBASE_AUTH_URI
+    TOKEN_URI: $FIREBASE_TOKEN_URI
+    AUTH_CERT_URL: $FIREBASE_AUTH_PROVIDER_X509_CERT_URL
+    CLIENT_CERT_URL: $FIREBASE_CLIENT_X509_CERT_URL
+
+    KEY_ID: $RAZORPAY_KEY_ID
+    SECRET_KEY: $RAZORPAY_KEY_SECRET
+
+
+stage:
+    stage: stage
+    script:
+        - echo "Create Docker Build & Container"
+        - docker build -t ${IMAGE_NAME}:$TAG .
+        
+        - docker stop $CONTAINER_NAME
+        - docker rm $CONTAINER_NAME
+        
+        #- docker run -p 8032:3000 -e STAGE="$CI_JOB_STAGE" -d --name $CONTAINER_NAME ${IMAGE_NAME}:$TAG
+        
+        - docker run -p 8032:3000 -e AUTH_SECRET=$SECRET_KEY -e AUTH_OTP=$AUTH_OTP_SECRET -e AWS_KEY=$AWS_ACCESS_KEYID -e AWS_SECRET_KEY=$AWS_SECRET_ACCESSKEY -e TYPE=$FIREBASE_TYPE -e PROJECT_ID=$FIREBASE_PROJECT_ID -e PRIVATE_KEY_ID=$FIREBASE_PRIVATE_KEY_ID -e CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL -e CLIENT_ID=$FIREBASE_CLIENT_ID -e KEY_ID=$RAZORPAY_KEY_ID -e SECRET_KEY=$RAZORPAY_KEY_SECRET -e DEPLOY_STAGE=$STAGE -e POSTGRES_USER_STAGE=$DB_STAGE_USER -e POSTGRES_HOST_STAGE=$DB_STAGE_HOST -e POSTGRES_DB_STAGE=$DB_STAGE_DATABASE -e POSTGRES_PASSWORD_STAGE=$DB_STAGE_PASSWORD -e POSTGRES_PORT_STAGE=$DB_STAGE_PORT -e HASURA_URL_STAGE=$HASURA_STAGE -e API_URL_STAGE=$STAGE_API_URL -e UI_URL_STAGE=$STAGE_UI_URL -d --name $CONTAINER_NAME $IMAGE_NAME:$TAG
+    only:
+        - master
+    tags:
+        - main-runner
+
+dev:
+    stage: dev
+    script:
+        - docker build -t ${DEV_IMAGE_NAME}:$TAG .
+        
+        - docker stop $DEV_CONTAINER_NAME
+        - docker rm $DEV_CONTAINER_NAME
+        
+        #- docker run -p 8031:3000 -e STAGE="$CI_JOB_STAGE" -d --name $DEV_CONTAINER_NAME ${DEV_IMAGE_NAME}:$TAG
+                    
+        - docker run -p 8031:3000 -e AUTH_SECRET=$SECRET_KEY -e AUTH_OTP=$AUTH_OTP_SECRET -e AWS_KEY=$AWS_ACCESS_KEYID -e AWS_SECRET_KEY=$AWS_SECRET_ACCESSKEY -e TYPE=$FIREBASE_TYPE -e PROJECT_ID=$FIREBASE_PROJECT_ID -e PRIVATE_KEY_ID=$FIREBASE_PRIVATE_KEY_ID -e CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL -e CLIENT_ID=$FIREBASE_CLIENT_ID -e KEY_ID=$RAZORPAY_KEY_ID -e SECRET_KEY=$RAZORPAY_KEY_SECRET -e STAGE=$CI_JOB_STAGE -e POSTGRES_USER_DEV=$DB_DEV_USER -e POSTGRES_HOST_DEV=$DB_DEV_HOST -e POSTGRES_DB_DEV=$DB_DEV_DATABASE -e POSTGRES_PASSWORD_DEV=$DB_DEV_PASSWORD -e POSTGRES_PORT_DEV=$DB_DEV_PORT -e HASURA_URL_DEV=$HASURA_DEV -e API_URL_DEV=$DEV_API_URL -e UI_URL_DEV=$DEV_UI_URL -d --name $DEV_CONTAINER_NAME ${DEV_IMAGE_NAME}:$TAG
+             
+    only:
+        - dev
+    tags:
+        - dev-runner
+    
